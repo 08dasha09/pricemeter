@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Синтетична фікстура у форматі YML (як прайси Rozetka / фіди CPA-мереж) -->
+<yml_catalog date="2026-10-04 10:00">
+    <shop>
+        <name>Test Shop</name>
+        <company>Test Shop LLC</company>
+        <url>https://shop.example.ua</url>
+        <currencies>
+            <currency id="UAH" rate="1"/>
+        </currencies>
+        <categories>
+            <category id="10">Велика побутова техніка</category>
+            <category id="11" parentId="10">Пральні машини</category>
+            <category id="12" parentId="10">Холодильники</category>
+        </categories>
+        <offers>
+            <offer id="312345678" available="true">
+                <url>https://shop.example.ua/samsung-ww80t4040ce1ua/p312345678/</url>
+                <price>15999</price>
+                <oldprice>18999</oldprice>
+                <currencyId>UAH</currencyId>
+                <categoryId>11</categoryId>
+                <picture>https://img.example.ua/1.jpg</picture>
+                <picture>https://img.example.ua/2.jpg</picture>
+                <vendor>Samsung</vendor>
+                <vendorCode>WW80T4040CE1UA</vendorCode>
+                <barcode>8806092000000</barcode>
+                <name>Пральна машина Samsung WW80T4040CE1UA</name>
+                <description><![CDATA[<p>Опис з <b>HTML</b> усередині</p>]]></description>
+                <param name="Максимальне завантаження" unit="кг">8</param>
+                <param name="Швидкість віджиму">1400 об/хв</param>
+                <delivery-options>
+                    <option cost="0" days="1-2"/>
+                </delivery-options>
+            </offer>
+            <offer id="400001" available="false">
+                <url>https://shop.example.ua/lg-ga-b509cqsl/p400001/</url>
+                <price>21 999,00</price>
+                <currencyId>UAH</currencyId>
+                <categoryId>12</categoryId>
+                <name>Холодильник LG GA-B509CQSL</name>
+            </offer>
+            <offer id="500002" type="vendor.model">
+                <url>https://shop.example.ua/bosch/p500002/</url>
+                <price>18750.50</price>
+                <currencyId>UAH</currencyId>
+                <categoryId>11</categoryId>
+                <typePrefix>Пральна машина</typePrefix>
+                <vendor>Bosch</vendor>
+                <model>WAN28263UA</model>
+                <stock_quantity>0</stock_quantity>
+            </offer>
+            <offer available="true">
+                <url>https://shop.example.ua/no-id/</url>
+                <price>100</price>
+                <name>Пропозиція без id</name>
+            </offer>
+        </offers>
+    </shop>
+</yml_catalog>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Обхід магазинів')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('crawl')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>Обхід магазинів</h1>
+            <p>Збір цін з магазинів: щодня за розкладом або вручну. Обхід іде у фоні з паузою ~3 с між запитами.</p>
+        </div>
+    </div>
+
+    <div th:if="${message}" class="flash flash-ok">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span th:text="${message}">Обхід #1 запущено</span>
+    </div>
+    <div th:if="${error}" class="flash flash-error">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span th:text="${error}">Помилка</span>
+    </div>
+
+    <div th:each="p : ${shopProblems}" class="flash flash-error">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span>
+            <strong th:text="${p.shopName}">Епіцентр</strong>:
+            <th:block th:if="${p.failedCategories > 0}" th:text="|категорій зі збоєм — ${p.failedCategories}; |">категорій зі збоєм — 1; </th:block>
+            <th:block th:if="${p.errorPercent != null}" th:text="|помилок у ${p.errorPercent}% сторінок товарів|">помилок у 23% сторінок товарів</th:block>
+            в останньому обході. Можливо, магазин змінив верстку — перевірте помилки в журналі нижче.
+        </span>
+    </div>
+
+    <div class="card card-pad schedule">
+        <div class="schedule-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+            </svg>
+        </div>
+        <div class="schedule-text" th:if="${nextScheduledRun != null}">
+            <strong>Щоденний обхід усіх магазинів</strong>
+            <span class="muted"
+                  th:text="|Наступний — ${#temporals.format(nextScheduledRun, 'dd.MM.yyyy о HH:mm')}, до ${scheduledLimit} товарів на категорію|">
+                Наступний — 07.10.2026 о 04:00</span>
+        </div>
+        <div class="schedule-text" th:if="${nextScheduledRun == null}">
+            <strong>Розклад вимкнено</strong>
+            <span class="muted">crawler.schedule.enabled=false</span>
+        </div>
+        <form method="post" th:action="@{/admin/crawl/all}" class="schedule-action">
+            <input type="hidden" name="limit" th:value="${fullCrawlLimit}">
+            <button type="submit" class="btn btn-ghost" title="Те саме, що щоденний обхід: ≈ 1 година"
+                    th:text="|Обійти всі зараз (по ${fullCrawlLimit})|">Обійти всі зараз</button>
+        </form>
+    </div>
+
+    <form method="post" th:action="@{/admin/crawl}" class="card card-pad section">
+        <div class="crawl-form">
+            <label class="field">Магазин і категорія
+                <select name="target" required>
+                    <option value="" disabled selected>Оберіть…</option>
+                    <optgroup th:each="t : ${targets}" th:label="${t.name}">
+                        <option th:each="c : ${t.categories}" th:value="|${t.code}:${c.code}|"
+                                th:text="|${t.name} — ${c.name}|">Moyo — Пральні машини</option>
+                    </optgroup>
+                </select>
+            </label>
+            <label class="field">Ліміт товарів
+                <input type="number" name="limit" min="1" th:max="${maxLimit}" th:value="${defaultLimit}" required>
+            </label>
+            <button type="submit" class="btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M7 4v16l13-8z"/>
+                </svg>
+                Запустити
+            </button>
+        </div>
+        <p class="hint">20 товарів — це приблизно хвилина-дві.
+            <span th:if="${anyRunning or refreshSoon == true}">Поки обхід триває, сторінка оновлюється автоматично.</span></p>
+    </form>
+
+    <div class="card section">
+        <div class="card-head">
+            <h2>Останні запуски</h2>
+            <span class="muted" th:text="|Останні ${runs.size()}|">Останні 30</span>
+        </div>
+        <div th:if="${runs.empty}" class="empty">
+            <strong>Запусків ще не було</strong>
+            Дочекайтеся обходу за розкладом або запустіть його вручну.
+        </div>
+        <div class="table-wrap" th:unless="${runs.empty}">
+            <table class="table-compact">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Початок</th>
+                    <th>Магазин / категорія</th>
+                    <th>Стан</th>
+                    <th class="num">Знайдено</th>
+                    <th class="num">Збережено</th>
+                    <th class="num">Нових</th>
+                    <th class="num">Змін ціни</th>
+                    <th class="num" title="Відомі пропозиції, оновлені за збереженою адресою">Оновлено</th>
+                    <th class="num">Пропущено</th>
+                    <th class="num" title="Сторінка товару зникла (404) — пропозицію деактивовано">Знято</th>
+                    <th class="num">Помилок</th>
+                    <th class="num">Час</th>
+                </tr>
+                </thead>
+                <tbody>
+                <th:block th:each="r : ${runs}">
+                    <tr>
+                        <td class="muted nowrap">
+                            <span th:text="${r.id}">1</span>
+                            <span class="sub" th:text="${r.scheduled} ? 'розклад' : 'вручну'">вручну</span>
+                        </td>
+                        <td class="nowrap" th:text="${#temporals.format(r.startedAt, 'dd.MM HH:mm:ss')}">06.10 20:00:00</td>
+                        <td class="nowrap">
+                            <strong th:text="${r.shopName}">Moyo</strong>
+                            <span class="sub" th:text="${r.categoryName}">Пральні машини</span>
+                        </td>
+                        <td th:switch="${r.status.name()}">
+                            <span th:case="'RUNNING'" class="pill pill-warn"><span class="spin"></span>триває</span>
+                            <span th:case="'FINISHED'" class="pill pill-good"><span class="dot"></span>готово</span>
+                            <span th:case="'FAILED'" class="pill pill-bad" th:title="${r.error}">
+                                <span class="dot"></span>збій</span>
+                            <span th:case="'INTERRUPTED'" class="pill pill-neutral"
+                                  title="Застосунок зупинився посеред обходу"><span class="dot"></span>перервано</span>
+                        </td>
+                        <th:block th:if="${r.finished()}">
+                            <td class="num" th:text="${r.discovered}">20</td>
+                            <td class="num" th:text="${r.saved}">19</td>
+                            <td class="num" th:text="${r.created}">3</td>
+                            <td class="num" th:text="${r.priceChanges}">5</td>
+                            <td class="num" th:text="${r.refreshed} ?: 0">4</td>
+                            <td class="num" th:text="${r.skipped}">1</td>
+                            <td class="num" th:text="${r.deactivated} ?: 0">0</td>
+                            <td class="num" th:classappend="${r.failed > 0} ? 'text-bad'"
+                                th:text="${r.failed}">0</td>
+                            <td class="num muted" th:text="|${r.durationSeconds} с|">75 с</td>
+                        </th:block>
+                        <td th:unless="${r.finished()}" colspan="9" class="muted" th:text="${r.error} ?: ''"></td>
+                    </tr>
+                    <tr th:if="${!r.errors.empty}" class="errors-row">
+                        <td colspan="13">
+                            <details>
+                                <summary th:text="|Помилки (${r.failed})|">Помилки (1)</summary>
+                                <ul class="errors">
+                                    <li th:each="e : ${r.errors}" th:text="${e}">https://... — HTTP 500</li>
+                                </ul>
+                            </details>
+                        </td>
+                    </tr>
+                </th:block>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+<script th:if="${anyRunning or refreshSoon == true}">setTimeout(() => location.reload(), 5000);</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Товари')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('products')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>Товари</h1>
+            <p th:text="|Знайдено: ${products.totalElements}. Пропозиції різних магазинів об'єднано в товари.|">
+                Знайдено: 0</p>
+        </div>
+    </div>
+
+    <form method="get" th:action="@{/products}" class="card">
+        <div class="toolbar toolbar-products">
+            <label class="field field-search">Пошук
+                <span class="search-input">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+                    </svg>
+                    <input type="search" name="q" th:value="${q}" placeholder="Назва або код моделі, напр. WW80T4040">
+                </span>
+            </label>
+            <label class="field">Категорія
+                <select name="category">
+                    <option value="">Усі категорії</option>
+                    <option th:each="c : ${categories}" th:value="${c.code}" th:text="${c.name}"
+                            th:selected="${c.code == category}"></option>
+                </select>
+            </label>
+            <button type="submit" class="btn">Знайти</button>
+        </div>
+        <div class="toolbar-extra">
+            <label class="check">
+                <input type="checkbox" name="multi" value="true" th:checked="${multi}" onchange="this.form.submit()">
+                Лише товари з кількох магазинів
+            </label>
+        </div>
+    </form>
+
+    <div class="card section">
+        <div th:if="${products.empty}" class="empty">
+            <strong>Нічого не знайдено</strong>
+            Спробуйте змінити фільтри. Нові пропозиції потрапляють у товари після обходу магазинів.
+        </div>
+
+        <div class="table-wrap" th:unless="${products.empty}">
+            <table>
+                <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th class="hide-sm">Магазини</th>
+                    <th class="num">Від</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${products}">
+                    <td>
+                        <a class="offer-title" th:href="@{/products/{id}(id=${p.id})}" th:text="${p.title}">
+                            Пральна машина Samsung WW80T4040CE1UA</a>
+                        <span class="sub">
+                            <span th:text="${p.categoryName}">Пральні машини</span>
+                            <th:block th:if="${p.modelCode != null}"> · <span th:text="${p.modelCode}">WW80T4040CE1UA</span></th:block>
+                            <span class="show-sm" th:text="|· магазинів: ${p.market.shops.size()}|">· магазинів: 2</span>
+                        </span>
+                    </td>
+                    <td class="hide-sm">
+                        <div class="shop-list">
+                            <th:block th:each="s : ${p.market.shops}">
+                                <span th:replace="~{fragments/layout :: shop(${s.code}, ${s.name})}"></span>
+                            </th:block>
+                        </div>
+                    </td>
+                    <td class="num nowrap">
+                        <div class="price-stack" th:if="${p.market.minPrice != null}">
+                            <span class="price">
+                                <th:block th:text="${#numbers.formatDecimal(p.market.minPrice, 1, 'WHITESPACE', 0, 'POINT')}">15 999</th:block><small>₴</small>
+                            </span>
+                            <span class="meta" th:if="${p.market.purchasableShops() > 1}"
+                                  th:text="|у ${p.market.purchasableShops()} магазинах|">у 2 магазинах</span>
+                        </div>
+                        <span th:if="${p.market.minPrice == null}" class="muted">немає в наявності</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pagination" th:if="${products.totalPages > 1}">
+            <a class="btn btn-ghost" th:classappend="${products.hasPrevious()} ? '' : 'disabled'"
+               th:href="@{${pageUrlPrefix + (products.number - 1)}}">← Попередня</a>
+            <span th:text="|Сторінка ${products.number + 1} з ${products.totalPages}|">Сторінка 1 з 2</span>
+            <a class="btn btn-ghost" th:classappend="${products.hasNext()} ? '' : 'disabled'"
+               th:href="@{${pageUrlPrefix + (products.number + 1)}}">Наступна →</a>
+        </nav>
+    </div>
+</main>
+</body>
+</html>

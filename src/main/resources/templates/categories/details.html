@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${category.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('products')}"></header>
+<main class="container">
+    <nav class="breadcrumbs" aria-label="breadcrumb">
+        <a th:href="@{/products}">Товари</a>
+        <span>/</span>
+        <span th:text="${category.name}">Пральні машини</span>
+    </nav>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${category.name}">Пральні машини</h1>
+            <p th:text="|${#numbers.formatInteger(products, 1, 'WHITESPACE')} товарів, з них у кількох магазинах — ${#numbers.formatInteger(multiShopProducts, 1, 'WHITESPACE')}|">
+                412 товарів, з них у кількох магазинах — 120</p>
+        </div>
+        <a class="btn" th:href="@{/products(category=${category.code})}">Усі товари категорії</a>
+    </div>
+
+    <section class="card section">
+        <div class="card-head">
+            <h2>Де дешевше</h2>
+            <span class="muted">на товарах, що є в наявності щонайменше у двох магазинах</span>
+        </div>
+        <div th:if="${shops.empty}" class="empty">
+            <strong>Порівняти ще нема з чим</strong>
+            Немає товарів, які зараз продаються в кількох магазинах.
+        </div>
+        <div class="table-wrap" th:unless="${shops.empty}">
+            <table>
+                <thead>
+                <tr>
+                    <th>Магазин</th>
+                    <th class="num">Порівняно товарів</th>
+                    <th class="num">Проти інших</th>
+                    <th class="num">Найдешевший сам</th>
+                    <th class="num hide-sm">Нарівні</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${shops}">
+                    <td>
+                        <a th:href="@{/shops/{code}(code=${s.shopCode.toLowerCase()})}">
+                            <span th:replace="~{fragments/layout :: shop(${s.shopCode}, ${s.shopName})}"></span>
+                        </a>
+                    </td>
+                    <td class="num" th:text="${s.products}">120</td>
+                    <td class="num nowrap">
+                        <span class="pill" th:classappend="${s.medianDeviationPercent < -2} ? 'pill-good' : (${s.medianDeviationPercent > 2} ? 'pill-bad' : 'pill-neutral')"
+                              th:text="${s.medianDeviationPercent > 0} ? |+${s.medianDeviationPercent}%| : (${s.medianDeviationPercent} < 0 ? |−${-s.medianDeviationPercent}%| : '0%')">−3%</span>
+                    </td>
+                    <td class="num" th:text="|${s.cheapestPercent()}%|">10%</td>
+                    <td class="num hide-sm" th:text="|${s.tiedCheapestPercent()}%|">70%</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="hint table-note">«Проти інших» — медіана відхилень ціни магазину від медіани цін інших магазинів на той самий
+            товар: −3% — зазвичай на 3% дешевше. «Нарівні» — найнижча ціна однакова в кількох магазинах (часто це
+            рекомендована ціна виробника).</p>
+    </section>
+
+    <section class="card section">
+        <div class="card-head">
+            <h2>Знижки в категорії</h2>
+            <a th:href="@{/discounts(category=${category.code})}">Усі знижки категорії →</a>
+        </div>
+        <div th:if="${discountStats.empty}" class="empty">
+            <strong>Заявлених знижок зараз немає</strong>
+        </div>
+        <div class="table-wrap" th:unless="${discountStats.empty}">
+            <table>
+                <thead>
+                <tr>
+                    <th>Магазин</th>
+                    <th class="num">Заявлено</th>
+                    <th class="num">Можна перевірити</th>
+                    <th class="num">Недостовірних</th>
+                    <th class="num hide-sm">Справжніх</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="d : ${discountStats}">
+                    <td>
+                        <a th:href="@{/shops/{code}(code=${d.shopCode.toLowerCase()})}">
+                            <span th:replace="~{fragments/layout :: shop(${d.shopCode}, ${d.shopName})}"></span>
+                        </a>
+                    </td>
+                    <td class="num" th:text="${d.declared}">40</td>
+                    <td class="num" th:text="${d.checked}">20</td>
+                    <td class="num" th:text="${d.untrustworthyPercent() != null} ? |${d.untrustworthyPercent()}%| : '—'">90%</td>
+                    <td class="num hide-sm" th:text="${d.genuine}">2</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

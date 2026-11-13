@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Мої підписки')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('subscriptions')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>Мої підписки</h1>
+            <p>Товари, за ціною яких ви стежите. Сповістимо про реальне зниження ціни або ціну, не вищу за бажану.</p>
+        </div>
+    </div>
+
+    <div th:if="${message}" class="flash flash-ok"><span th:text="${message}">Більше не стежимо</span></div>
+
+    <div class="card section">
+        <div th:if="${subscriptions.empty}" class="empty">
+            <strong>Підписок ще немає</strong>
+            Відкрийте товар і натисніть «Стежити».
+            <a class="btn" th:href="@{/products}">До товарів</a>
+        </div>
+
+        <div class="table-wrap" th:unless="${subscriptions.empty}">
+            <table>
+                <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th class="num">Зараз від</th>
+                    <th class="num hide-sm">Бажана ціна</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${subscriptions}">
+                    <td>
+                        <a class="offer-title" th:href="@{/products/{id}(id=${s.productId})}" th:text="${s.title}">
+                            Пральна машина Samsung WW80T4040CE1UA</a>
+                        <span class="sub">
+                            <span th:text="${s.categoryName}">Пральні машини</span>
+                            · <span th:text="|з ${#temporals.format(s.subscribedAt, 'dd.MM.yyyy')}|">з 18.10.2026</span>
+                            <span class="show-sm" th:if="${s.targetPrice != null}"
+                                  th:text="|· бажана ${#numbers.formatDecimal(s.targetPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">
+                                · бажана 15 000 ₴</span>
+                        </span>
+                    </td>
+                    <td class="num nowrap">
+                        <div class="price-stack" th:if="${s.minPrice != null}">
+                            <span class="price" th:classappend="${s.targetReached()} ? 'price-good'">
+                                <th:block th:text="${#numbers.formatDecimal(s.minPrice, 1, 'WHITESPACE', 0, 'POINT')}">15 999</th:block><small>₴</small>
+                            </span>
+                            <span class="meta" th:if="${s.targetReached()}">не вища за бажану</span>
+                        </div>
+                        <span th:if="${s.minPrice == null}" class="muted">немає в наявності</span>
+                    </td>
+                    <td class="num nowrap hide-sm">
+                        <span th:if="${s.targetPrice != null}"
+                              th:text="|${#numbers.formatDecimal(s.targetPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">15 000 ₴</span>
+                        <span th:if="${s.targetPrice == null}" class="muted">—</span>
+                    </td>
+                    <td class="num">
+                        <form method="post" th:action="@{/account/subscriptions/{id}/delete(id=${s.productId})}">
+                            <input type="hidden" name="back" value="list">
+                            <button type="submit" class="btn btn-ghost btn-sm">Не стежити</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card section" th:unless="${notifications.empty}">
+        <div class="card-head">
+            <h2>Останні сповіщення</h2>
+            <span class="muted" th:if="${notifications[0].channel.name() == 'LOG'}">
+                пошту не налаштовано — сповіщення лише тут</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Коли</th>
+                    <th>Товар</th>
+                    <th class="num">Ціна</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="n : ${notifications}">
+                    <td class="nowrap" th:text="${#temporals.format(n.sentAt, 'dd.MM HH:mm')}">19.10 05:12</td>
+                    <td>
+                        <a class="offer-title" th:href="@{/products/{id}(id=${n.productId})}" th:text="${n.productTitle}">
+                            LG F2Y2HS5WE</a>
+                        <span class="sub">
+                            <span th:text="${n.kind.name() == 'TARGET_REACHED'} ? 'досягнуто бажаної ціни' : 'реальне зниження'">
+                                реальне зниження</span>
+                            · <span th:text="${n.shopName}">Епіцентр</span>
+                            <span th:unless="${n.delivered}" class="bad-text">· лист не надіслано</span>
+                        </span>
+                    </td>
+                    <td class="num nowrap">
+                        <div class="price-stack">
+                            <span class="price">
+                                <th:block th:text="${#numbers.formatDecimal(n.price, 1, 'WHITESPACE', 0, 'POINT')}">14 999</th:block><small>₴</small>
+                            </span>
+                            <span class="meta" th:if="${n.previousPrice != null}"
+                                  th:text="|було ${#numbers.formatDecimal(n.previousPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">було 15 999 ₴</span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

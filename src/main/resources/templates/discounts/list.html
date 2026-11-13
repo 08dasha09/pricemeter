@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Знижки')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('discounts')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>Знижки</h1>
+            <p>Чи справді акційна ціна нижча, ніж у інших магазинах. Мірило — не глибина заявленої знижки,
+                а відхилення ціни від медіани інших магазинів, де товар є в наявності.</p>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="card-head">
+            <h2>Магазини</h2>
+            <span class="muted">частка недостовірних — серед знижок, які є з чим порівняти</span>
+        </div>
+        <div class="table-wrap">
+            <table class="table-compact">
+                <thead>
+                <tr>
+                    <th>Магазин</th>
+                    <th class="num">Недостовірні</th>
+                    <th class="num">Фіктивні</th>
+                    <th class="num">Підозрілі</th>
+                    <th class="num">Справжні</th>
+                    <th class="num hide-sm">Перевірено</th>
+                    <th class="num hide-sm">Заявлено</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${stats}">
+                    <td><a th:href="@{/discounts(level=${level},shop=${s.shopCode})}" class="shop-link">
+                        <span th:replace="~{fragments/layout :: shop(${s.shopCode}, ${s.shopName})}"></span></a>
+                        <a class="muted small-link" th:href="@{/shops/{code}(code=${s.shopCode.toLowerCase()})}">про магазин</a></td>
+                    <td class="num"><strong th:text="${s.untrustworthyPercent()} != null ? |${s.untrustworthyPercent()}%| : '—'">90%</strong></td>
+                    <td class="num" th:text="${s.fake}">40</td>
+                    <td class="num" th:text="${s.suspicious}">20</td>
+                    <td class="num" th:text="${s.genuine}">3</td>
+                    <td class="num hide-sm" th:text="${s.checked}">63</td>
+                    <td class="num hide-sm muted" th:text="${s.declared}">120</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <form method="get" th:action="@{/discounts}" class="card section">
+        <div class="toolbar">
+            <label class="field">Оцінка
+                <select name="level">
+                    <option th:each="l : ${levels}" th:value="${l.key}" th:text="${l.value}"
+                            th:selected="${l.key == level}"></option>
+                </select>
+            </label>
+            <label class="field">Магазин
+                <select name="shop">
+                    <option value="">Усі магазини</option>
+                    <option th:each="s : ${shops}" th:value="${s.code}" th:text="${s.name}"
+                            th:selected="${s.code == shop}"></option>
+                </select>
+            </label>
+            <label class="field">Категорія
+                <select name="category">
+                    <option value="">Усі категорії</option>
+                    <option th:each="c : ${categories}" th:value="${c.code}" th:text="${c.name}"
+                            th:selected="${c.code == category}"></option>
+                </select>
+            </label>
+            <button type="submit" class="btn">Показати</button>
+        </div>
+    </form>
+
+    <div class="card section">
+        <div class="card-head">
+            <h2 th:text="|Знайдено: ${total}|">Знайдено: 0</h2>
+        </div>
+        <div th:if="${rows.empty}" class="empty">
+            <strong>Нічого не знайдено</strong>
+            Спробуйте інший фільтр.
+        </div>
+        <div class="table-wrap" th:unless="${rows.empty}">
+            <table>
+                <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th class="num">Ціна</th>
+                    <th class="num hide-sm">Ринок</th>
+                    <th>Оцінка</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${rows}" th:with="o=${r.finding.offer}, a=${r.finding.assessment}">
+                    <td>
+                        <a class="offer-title" th:href="${r.finding.productId != null} ? @{/products/{id}(id=${r.finding.productId})} : @{/offers/{id}(id=${o.id})}"
+                           th:text="${o.title}">Назва</a>
+                        <span class="sub">
+                            <span th:replace="~{fragments/layout :: shop(${o.shopCode}, ${o.shopName})}"></span>
+                            <span th:text="|· ${r.categoryName}|">· Пральні машини</span>
+                        </span>
+                    </td>
+                    <td class="num nowrap">
+                        <div class="price-stack">
+                            <span class="price" th:text="|${#numbers.formatDecimal(o.price, 1, 'WHITESPACE', 0, 'POINT')} ₴|">15 999 ₴</span>
+                            <span>
+                                <span class="old-price"
+                                      th:text="|${#numbers.formatDecimal(o.oldPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">18 999 ₴</span>
+                                <span class="pill pill-discount" th:text="|−${a.declaredPercent}%|">−16%</span>
+                            </span>
+                        </div>
+                    </td>
+                    <td class="num nowrap hide-sm">
+                        <th:block th:if="${a.otherMedian != null}">
+                            <span th:text="|${#numbers.formatDecimal(a.otherMedian, 1, 'WHITESPACE', 0, 'POINT')} ₴|">16 000 ₴</span>
+                            <span class="sub" th:text="${a.marketDeviationPercent > 0} ? |+${a.marketDeviationPercent}% до ринку| : |${a.marketDeviationPercent}% до ринку|">0% до ринку</span>
+                        </th:block>
+                        <span th:if="${a.otherMedian == null}" class="muted">—</span>
+                    </td>
+                    <td>
+                        <span class="pill" th:classappend="|pill-tone-${r.view.tone}|" th:text="${r.view.label}">фіктивна знижка</span>
+                        <ul class="reasons reasons-compact">
+                            <li th:each="reason : ${r.view.reasons}" th:text="${reason}">Акційна ціна на рівні ринку</li>
+                        </ul>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav class="pagination" th:if="${pages > 1}">
+            <a class="btn btn-ghost" th:classappend="${page > 0} ? '' : 'disabled'"
+               th:href="@{${pageUrlPrefix + (page - 1)}}">← Попередня</a>
+            <span th:text="|Сторінка ${page + 1} з ${pages}|">Сторінка 1 з 2</span>
+            <a class="btn btn-ghost" th:classappend="${page + 1 < pages} ? '' : 'disabled'"
+               th:href="@{${pageUrlPrefix + (page + 1)}}">Наступна →</a>
+        </nav>
+    </div>
+</main>
+</body>
+</html>

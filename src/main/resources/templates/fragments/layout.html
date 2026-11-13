@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' — Pricemeter'">Pricemeter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="icon" th:href="@{/favicon.svg}" type="image/svg+xml">
+</head>
+<body>
+<header th:fragment="nav(active)" class="topbar">
+    <div class="container">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-mark">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/>
+                </svg>
+            </span>
+            <span class="brand-name">Pricemeter</span>
+        </a>
+        <nav class="nav">
+            <a th:href="@{/products}" th:classappend="${active == 'products'} ? 'active'">Товари</a>
+            <a th:href="@{/discounts}" th:classappend="${active == 'discounts'} ? 'active'">Знижки</a>
+            <a th:href="@{/offers}" th:classappend="${active == 'offers'} ? 'active'">Пропозиції</a>
+            <th:block th:if="${currentUser != null and currentUser.admin}">
+                <a th:href="@{/admin/crawl}" th:classappend="${active == 'crawl'} ? 'active'">Обхід</a>
+                <a th:href="@{/admin/matching}" th:classappend="${active == 'matching'} ? 'active'">Зіставлення</a>
+            </th:block>
+        </nav>
+        <div class="account">
+            <a th:if="${currentUser == null}" th:href="@{/login}" class="account-link"
+               th:classappend="${active == 'login'} ? 'active'">Увійти</a>
+            <form th:if="${currentUser != null}" method="post" th:action="@{/logout}" class="account-logout">
+                <a th:href="@{/account/subscriptions}" class="account-link"
+                   th:classappend="${active == 'subscriptions'} ? 'active'">Підписки</a>
+                <span class="account-email hide-sm" th:text="${currentUser.email}">user@example.com</span>
+                <button type="submit" class="account-link" th:title="|Вийти (${currentUser.email})|">Вийти</button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<span th:fragment="shop(code, name)" class="shop" th:attr="data-shop=${code}">
+    <span class="shop-logo" th:text="${#strings.substring(name, 0, 1)}">M</span>
+    <span th:text="${name}">Moyo</span>
+</span>
+</body>
+</html>

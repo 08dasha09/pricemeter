@@ -1,0 +1,58 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Секрети для контейнера застосунку ###
+docker/app.env
+
+### Логи та аварійні дампи JVM ###
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+*.hprof
+
+### Секрети та локальні налаштування ###
+.env
+.env.*
+*.env
+application-local.properties
+
+### Системні та тимчасові файли ###
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.tmp
+*.bak
+*~

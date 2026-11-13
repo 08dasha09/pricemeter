@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Реєстрація')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('login')}"></header>
+<main class="container">
+    <div class="auth card card-pad">
+        <h1>Реєстрація</h1>
+        <p class="muted">Обліковий запис потрібен, щоб підписатися на товар.</p>
+
+        <form method="post" th:action="@{/register}" th:object="${form}" class="auth-form" novalidate>
+            <label class="field">Email
+                <input type="email" th:field="*{email}" autocomplete="email" required autofocus
+                       th:classappend="${#fields.hasErrors('email')} ? 'invalid'">
+                <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Помилка</span>
+            </label>
+            <label class="field">Пароль
+                <input type="password" th:field="*{password}" autocomplete="new-password" required
+                       th:classappend="${#fields.hasErrors('password')} ? 'invalid'">
+                <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Помилка</span>
+            </label>
+            <label class="field">Пароль ще раз
+                <input type="password" th:field="*{confirmPassword}" autocomplete="new-password" required
+                       th:classappend="${#fields.hasErrors('confirmPassword')} ? 'invalid'">
+                <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}"
+                      th:errors="*{confirmPassword}">Помилка</span>
+            </label>
+            <button type="submit" class="btn">Зареєструватися</button>
+        </form>
+        <p class="auth-switch">Уже є обліковий запис? <a th:href="@{/login}">Увійти</a></p>
+    </div>
+</main>
+</body>
+</html>

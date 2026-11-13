@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Вхід')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('login')}"></header>
+<main class="container">
+    <div class="auth card card-pad">
+        <h1>Вхід</h1>
+        <p class="muted">Щоб стежити за цінами товарів і отримувати сповіщення про реальне зниження.</p>
+
+        <div th:if="${param.registered}" class="flash flash-ok">
+            <span>Обліковий запис створено — увійдіть з ним.</span>
+        </div>
+        <div th:if="${param.error}" class="flash flash-error">
+            <span>Неправильний email або пароль.</span>
+        </div>
+
+        <form method="post" th:action="@{/login}" class="auth-form">
+            <label class="field">Email
+                <input type="email" name="username" autocomplete="username" required autofocus>
+            </label>
+            <label class="field">Пароль
+                <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+            <label class="check">
+                <input type="checkbox" name="remember-me" checked> Запам'ятати мене на 30 днів
+            </label>
+            <button type="submit" class="btn">Увійти</button>
+        </form>
+        <p class="auth-switch">Немає облікового запису? <a th:href="@{/register}">Зареєструватися</a></p>
+    </div>
+</main>
+</body>
+</html>

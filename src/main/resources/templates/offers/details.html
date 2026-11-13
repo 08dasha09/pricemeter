@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${offer.title})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('offers')}"></header>
+<main class="container">
+    <nav class="breadcrumbs" aria-label="breadcrumb">
+        <a th:href="@{/offers}">Пропозиції</a>
+        <span>/</span>
+        <a th:href="@{/offers(shop=${offer.shopCode})}" th:text="${offer.shopName}">Moyo</a>
+    </nav>
+
+    <div class="page-head offer-head">
+        <div>
+            <h1 th:text="${offer.title}">Пральна машина Samsung WW80T4040CE1UA</h1>
+            <div class="chips">
+                <th:block th:replace="~{fragments/layout :: shop(${offer.shopCode}, ${offer.shopName})}"></th:block>
+                <span class="pill pill-neutral" th:text="${offer.categoryName} ?: 'Без категорії'">Пральні машини</span>
+                <span th:unless="${offer.active}" class="pill pill-warn">неактивна</span>
+                <a th:if="${productId != null}" th:href="@{/products/{id}(id=${productId})}" class="pill pill-neutral">
+                    Ціни в усіх магазинах →</a>
+            </div>
+        </div>
+        <a class="btn btn-ghost" th:href="${offer.url}" target="_blank" rel="noopener noreferrer">
+            Відкрити на сайті
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M7 17 17 7M8 7h9v9"/>
+            </svg>
+        </a>
+    </div>
+
+    <section class="card card-pad verdict" th:classappend="|verdict-${verdict.tone}|">
+        <div>
+            <span class="label">Оцінка ціни</span>
+            <strong class="verdict-title" th:text="${verdict.title}">Ціна нижча за звичайну</strong>
+            <p class="verdict-text" th:text="${verdict.explanation}">На 12% дешевше за медіану інших магазинів (3)</p>
+            <p th:if="${verdict.reduced}" class="hint">Оцінка за однією ознакою — довіра знижена.</p>
+        </div>
+    </section>
+
+    <section th:if="${discount != null}" class="card card-pad verdict section"
+             th:classappend="|verdict-${discount.tone}|">
+        <span class="label">Заявлена знижка</span>
+        <strong class="verdict-title" th:text="${#strings.capitalize(discount.label)}">Підозріла знижка</strong>
+        <ul class="reasons">
+            <li th:each="r : ${discount.reasons}" th:text="${r}">Акційна ціна на рівні інших магазинів</li>
+        </ul>
+    </section>
+
+    <div class="hero section">
+        <section class="card card-pad hero-price">
+            <div>
+                <span class="label">Поточна ціна</span>
+                <div class="big-price" th:if="${offer.price != null}">
+                    <strong th:text="|${#numbers.formatDecimal(offer.price, 1, 'WHITESPACE', 0, 'POINT')} ₴|">15 999 ₴</strong>
+                    <th:block th:if="${offer.oldPrice != null}">
+                        <span class="old-price"
+                              th:text="|${#numbers.formatDecimal(offer.oldPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">18 999 ₴</span>
+                        <span class="pill pill-discount" th:text="|−${offer.discountPercent()}%|">−16%</span>
+                    </th:block>
+                </div>
+                <p th:if="${offer.price == null}" class="muted">Ціни ще немає</p>
+                <div style="margin-top: 10px">
+                    <span th:if="${offer.available}" class="stock in"><span class="dot"></span>У наявності</span>
+                    <span th:unless="${offer.available}" class="stock out"><span class="dot"></span>Немає в наявності</span>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <span class="label">Мінімум</span>
+                    <b th:text="${minPrice} != null ? |${#numbers.formatDecimal(minPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴| : '—'">14 999 ₴</b>
+                </div>
+                <div class="stat">
+                    <span class="label">Максимум</span>
+                    <b th:text="${maxPrice} != null ? |${#numbers.formatDecimal(maxPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴| : '—'">18 999 ₴</b>
+                </div>
+                <div class="stat">
+                    <span class="label">Спостерігаємо</span>
+                    <b th:text="|${observedDays} дн.|">3 дн.</b>
+                </div>
+            </div>
+        </section>
+
+        <section class="card card-pad">
+            <span class="label">Про пропозицію</span>
+            <dl class="facts">
+                <dt>Бренд</dt>
+                <dd th:text="${brand} ?: '—'">Samsung</dd>
+                <dt>Код моделі</dt>
+                <dd th:text="${mpn} ?: '—'">WW80T4040CE1UA</dd>
+                <dt>Штрихкод</dt>
+                <dd th:text="${gtin} ?: '—'">8806092000000</dd>
+                <dt>Уперше</dt>
+                <dd th:text="${#temporals.format(firstSeenAt, 'dd.MM.yyyy HH:mm')}">01.10.2026 10:00</dd>
+                <dt>Востаннє</dt>
+                <dd th:text="${#temporals.format(offer.lastSeenAt, 'dd.MM.yyyy HH:mm')}">04.10.2026 12:00</dd>
+            </dl>
+        </section>
+    </div>
+
+    <section class="card section">
+        <div class="card-head">
+            <div>
+                <h2>Історія ціни</h2>
+                <div class="chart-legend" style="margin-top: 6px">
+                    <span><i class="swatch"></i>Ціна</span>
+                    <span id="legend-old-price" hidden><i class="swatch dashed"></i>Заявлена стара ціна</span>
+                    <span id="legend-unconfirmed" hidden><i class="swatch dotted"></i>Магазин не обходили — остання відома ціна</span>
+                </div>
+            </div>
+            <div class="segmented" role="group" id="periods">
+                <button type="button" th:each="p : ${periods}" th:attr="data-period=${p.key.name()}"
+                        th:classappend="${p.key == defaultPeriod} ? 'active'"
+                        th:text="${p.value}">Місяць</button>
+            </div>
+        </div>
+        <div class="chart-box">
+            <canvas id="price-chart" th:attr="data-offer-id=${offer.id},data-period=${defaultPeriod.name()}"
+                    aria-label="Графік історії ціни" role="img"></canvas>
+            <div id="chart-empty" class="empty" hidden>
+                <strong>Даних за цей період ще немає</strong>
+                Історія накопичується з кожним обходом магазину.
+            </div>
+        </div>
+    </section>
+
+    <section class="card section">
+        <div class="card-head">
+            <h2>Зміни ціни</h2>
+            <span class="muted" th:text="|Станів: ${changes.size()}|">Станів: 2</span>
+        </div>
+        <div th:if="${changes.empty}" class="empty">Історії ще немає.</div>
+        <div class="table-wrap" th:unless="${changes.empty}">
+            <table>
+                <thead>
+                <tr>
+                    <th>З</th>
+                    <th>Підтверджено до</th>
+                    <th class="num">Ціна</th>
+                    <th class="num">Стара ціна</th>
+                    <th>Наявність</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${changes}">
+                    <td class="nowrap" th:text="${#temporals.format(c.from, 'dd.MM.yyyy HH:mm')}">01.10.2026 10:00</td>
+                    <td class="nowrap muted" th:text="${#temporals.format(c.to, 'dd.MM.yyyy HH:mm')}">04.10.2026 12:00</td>
+                    <td class="num price"
+                        th:text="${c.price} != null ? |${#numbers.formatDecimal(c.price, 1, 'WHITESPACE', 0, 'POINT')} ₴| : '—'">
+                        15 999 ₴
+                    </td>
+                    <td class="num">
+                        <span th:if="${c.oldPrice != null}" class="old-price"
+                              th:text="|${#numbers.formatDecimal(c.oldPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">18 999 ₴</span>
+                    </td>
+                    <td>
+                        <span th:if="${c.available}" class="stock in"><span class="dot"></span>є</span>
+                        <span th:unless="${c.available}" class="stock out"><span class="dot"></span>немає</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script th:src="@{/js/offer-chart.js}"></script>
+</body>
+</html>

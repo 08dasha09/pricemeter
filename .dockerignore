@@ -1,0 +1,6 @@
+target
+.idea
+.git
+docs
+docker
+*.md

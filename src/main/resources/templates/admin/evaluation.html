@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Якість зіставлення')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('matching')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>Якість зіставлення</h1>
+            <p>Порівняння рішень системи з ручною розміткою пар. Пріоритет — точність (Precision): хибне
+                об'єднання різних товарів дає хибні вердикти, а пропущений збіг лише зменшує кількість
+                товарів з кількох магазинів.</p>
+        </div>
+        <div class="head-actions">
+            <a th:href="@{/admin/labeling}" class="btn">Розмічати пари</a>
+            <a th:href="@{/admin/matching}" class="btn btn-ghost">До зіставлення</a>
+        </div>
+    </div>
+
+    <div th:if="${evaluation.labeled == 0}" class="card empty">
+        <strong>Розмічених пар ще немає</strong>
+        Розмітьте хоча б кілька десятків пар — метрики з'являться тут.
+    </div>
+
+    <th:block th:unless="${evaluation.labeled == 0}">
+        <section class="card card-pad">
+            <div class="label">Поточні рішення · оцінка для всіх пар</div>
+            <div class="stats section">
+                <div class="stat"><span class="sub">Precision</span><b th:text="${systemWeighted.precision}">97.5%</b></div>
+                <div class="stat"><span class="sub">Recall</span><b th:text="${systemWeighted.recall}">88.0%</b></div>
+                <div class="stat"><span class="sub">F1</span><b th:text="${systemWeighted.f1}">92.5%</b></div>
+            </div>
+            <p class="muted">
+                На вибірці: Precision <th:block th:text="${systemSample.precision}">95%</th:block>,
+                Recall <th:block th:text="${systemSample.recall}">90%</th:block>
+                (об'єднано правильно — <th:block th:text="${systemSample.tp}">40</th:block>, хибно —
+                <th:block th:text="${systemSample.fp}">2</th:block>, пропущено —
+                <th:block th:text="${systemSample.fn}">4</th:block>).
+                Розмічено <th:block th:text="${evaluation.labeled}">120</th:block> пар, з них той самий товар —
+                <th:block th:text="${evaluation.same}">45</th:block><th:block th:if="${evaluation.skipped > 0}">;
+                    <th:block th:text="${evaluation.skipped}">2</th:block> міток не враховано — пари більше не
+                    порівнюються</th:block>.
+            </p>
+        </section>
+
+        <section class="card section">
+            <div class="card-head">
+                <h2>Пороги</h2>
+                <span class="muted">зважена оцінка: пара важить стільки, скільки пар її діапазону вона представляє</span>
+            </div>
+            <dl class="card-pad facts thresholds">
+                <dt>Автоматичне об'єднання</dt>
+                <dd>зараз <b th:text="${#numbers.formatDecimal(evaluation.autoThreshold, 1, 2, 'POINT')}">0.90</b>
+                    · рекомендовано <b th:text="${evaluation.suggestedAuto} != null ? ${#numbers.formatDecimal(evaluation.suggestedAuto, 1, 2, 'POINT')} : '—'">0.85</b>
+                    <span class="sub" th:text="|найменший поріг із Precision ≥ ${#numbers.formatDecimal(evaluation.targetPrecision * 100, 1, 0)}%|">Precision ≥ 98%</span></dd>
+                <dt>Ручна перевірка</dt>
+                <dd>зараз <b th:text="${#numbers.formatDecimal(evaluation.reviewThreshold, 1, 2, 'POINT')}">0.65</b>
+                    · рекомендовано <b th:text="${evaluation.suggestedReview} != null ? ${#numbers.formatDecimal(evaluation.suggestedReview, 1, 2, 'POINT')} : '—'">0.50</b>
+                    <span class="sub" th:text="|найбільший поріг із Recall ≥ ${#numbers.formatDecimal(evaluation.targetRecall * 100, 1, 0)}%|">Recall ≥ 98%</span></dd>
+            </dl>
+            <div class="table-wrap">
+                <table class="table-compact">
+                    <thead>
+                    <tr>
+                        <th>Поріг</th>
+                        <th class="num">Precision</th>
+                        <th class="num">Recall</th>
+                        <th class="num">F1</th>
+                        <th class="num hide-sm">TP / FP / FN на вибірці</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${rows}" th:classappend="${r.auto or r.review} ? 'row-current'">
+                        <td>
+                            <b th:text="${#numbers.formatDecimal(r.threshold, 1, 2, 'POINT')}">0.90</b>
+                            <span th:if="${r.auto}" class="sub">· авто</span>
+                            <span th:if="${r.review}" class="sub">· перевірка</span>
+                        </td>
+                        <td class="num" th:text="${r.weighted.precision}">98.0%</td>
+                        <td class="num" th:text="${r.weighted.recall}">90.0%</td>
+                        <td class="num" th:text="${r.weighted.f1}">93.8%</td>
+                        <td class="num hide-sm" th:text="|${r.sample.tp} / ${r.sample.fp} / ${r.sample.fn}|">40 / 1 / 5</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card section">
+            <div class="card-head">
+                <h2>Помилки поточних рішень</h2>
+                <span class="muted" th:text="|${evaluation.errors.size()} пар|">3 пари</span>
+            </div>
+            <div th:if="${evaluation.errors.empty}" class="card-pad muted">Розмічені пари система вирішила правильно.</div>
+            <ul class="suggestions" th:unless="${evaluation.errors.empty}">
+                <li th:each="e : ${evaluation.errors}" class="suggestion">
+                    <div class="suggestion-score">
+                        <strong th:text="|${#numbers.formatDecimal(e.score.value * 100, 1, 0)}%|">82%</strong>
+                        <span class="sub" th:text="${reasons.get(e.score.reason)}">один код — початок іншого</span>
+                    </div>
+                    <ul class="suggestion-offers">
+                        <li th:each="s : ${e.sides()}">
+                            <span th:replace="~{fragments/layout :: shop(${s.shopCode}, ${shopNames.get(s.shopCode) ?: s.shopCode})}"></span>
+                            <a th:href="@{/offers/{id}(id=${s.offerId})}" th:text="${s.title}">Назва</a>
+                        </li>
+                    </ul>
+                    <span th:class="${e.systemSame} ? 'pill pill-bad' : 'pill pill-warn'"
+                          th:text="${e.systemSame} ? 'хибне об\'єднання' : 'пропущений збіг'">хибне об'єднання</span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="card section">
+            <div class="card-head">
+                <h2>Пари за діапазонами оцінки</h2>
+                <span class="muted">усі пари різних магазинів однієї категорії й бренду</span>
+            </div>
+            <div class="table-wrap">
+                <table class="table-compact">
+                    <thead>
+                    <tr>
+                        <th>Оцінка системи</th>
+                        <th class="num">Пар</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p : ${evaluation.population}">
+                        <td th:text="|${#numbers.formatDecimal(p.key.from() * 100, 1, 0)}–${#numbers.formatDecimal(p.key.to() * 100, 1, 0)}%|">65–80%</td>
+                        <td class="num" th:text="${p.value}">120</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </th:block>
+</main>
+</body>
+</html>

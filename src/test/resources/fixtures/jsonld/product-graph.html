@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!-- Синтетична фікстура: @graph з кількома сутностями, масив пропозицій, закреслена ціна,
+     зламаний JSON-LD блок і блок «схожі товари» без offers -->
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <script type="application/ld+json">
+    { "@context": "https://schema.org", "@type": "Organization", "name": "Shop", }
+    </script>
+    <script type="application/ld+json">
+    { "this is": broken json
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "Схожий товар без пропозицій"
+    }
+    </script>
+    <script type="Application/LD+JSON">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [ { "@type": "ListItem", "position": 1, "name": "Холодильники" } ]
+        },
+        {
+          "@type": ["Product", "schema:IndividualProduct"],
+          "name": "Холодильник LG GA-B509CQSL",
+          "brand": "LG",
+          "offers": [
+            {
+              "@type": "Offer",
+              "price": 21999,
+              "priceCurrency": "UAH",
+              "availability": "http://schema.org/OutOfStock",
+              "seller": { "@type": "Organization", "name": "Partner" }
+            },
+            {
+              "@type": "Offer",
+              "priceCurrency": "UAH",
+              "availability": "InStock",
+              "gtin": "8801031000000",
+              "priceSpecification": [
+                { "@type": "UnitPriceSpecification", "price": "19 499", "priceCurrency": "UAH" },
+                { "@type": "UnitPriceSpecification", "priceType": "https://schema.org/StrikethroughPrice", "price": "23 999", "priceCurrency": "UAH" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+</head>
+<body></body>
+</html>

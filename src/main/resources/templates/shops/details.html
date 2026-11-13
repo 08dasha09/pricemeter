@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${shop.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1 th:text="${shop.name}">Moyo</h1>
+            <p>
+                <a th:href="${shop.baseUrl}" th:text="${shop.baseUrl}" rel="noopener" target="_blank">https://www.moyo.ua</a>
+                · <span th:text="|${#numbers.formatInteger(activeOffers, 1, 'WHITESPACE')} пропозицій на сайті|">2 000 пропозицій</span>
+            </p>
+        </div>
+    </div>
+
+    <section class="card card-pad verdict section" th:if="${index != null}"
+             th:classappend="${index.medianDeviationPercent < -2} ? 'verdict-good' : (${index.medianDeviationPercent > 2} ? 'verdict-bad' : 'verdict-neutral')">
+        <span class="label" th:text="|Ціни проти інших магазинів (${shopsCompared})|">Ціни проти інших магазинів (4)</span>
+        <strong class="verdict-title"
+                th:text="${index.medianDeviationPercent < 0} ? |Зазвичай на ${-index.medianDeviationPercent}% дешевше| : (${index.medianDeviationPercent > 0} ? |Зазвичай на ${index.medianDeviationPercent}% дорожче| : 'Зазвичай на рівні інших')">
+            Зазвичай на 3% дешевше</strong>
+        <p class="verdict-text"
+           th:text="|Медіана відхилень ціни від медіани інших магазинів на ${index.products} товарах, що є в наявності щонайменше у двох магазинах. Найдешевший сам — на ${index.cheapest} з них (${index.cheapestPercent()}%), нарівні з іншими найдешевшими — на ${index.tiedCheapest} (${index.tiedCheapestPercent()}%).|">
+            Медіана відхилень…</p>
+    </section>
+    <div class="card empty section" th:if="${index == null}">
+        <strong>Порівняти ще нема з чим</strong>
+        Немає товарів, які зараз є в наявності і в цьому магазині, і в інших.
+    </div>
+
+    <section class="card section" th:unless="${byCategory.empty}">
+        <div class="card-head"><h2>За категоріями</h2></div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Категорія</th>
+                    <th class="num">Порівняно товарів</th>
+                    <th class="num">Проти інших</th>
+                    <th class="num hide-sm">Найдешевший сам</th>
+                    <th class="num hide-sm">Нарівні</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${byCategory}">
+                    <td><a th:href="@{/categories/{code}(code=${c.categoryCode.toLowerCase()})}" th:text="${c.categoryName}">Пральні машини</a></td>
+                    <td class="num" th:text="${c.index.products}">120</td>
+                    <td class="num nowrap">
+                        <span class="pill" th:classappend="${c.index.medianDeviationPercent < -2} ? 'pill-good' : (${c.index.medianDeviationPercent > 2} ? 'pill-bad' : 'pill-neutral')"
+                              th:text="${c.index.medianDeviationPercent > 0} ? |+${c.index.medianDeviationPercent}%| : (${c.index.medianDeviationPercent} < 0 ? |−${-c.index.medianDeviationPercent}%| : '0%')">−3%</span>
+                    </td>
+                    <td class="num hide-sm" th:text="|${c.index.cheapestPercent()}%|">10%</td>
+                    <td class="num hide-sm" th:text="|${c.index.tiedCheapestPercent()}%|">70%</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card card-pad section">
+        <div class="section-head">
+            <h2>Знижки</h2>
+            <a th:href="@{/discounts(shop=${shop.code})}">Усі знижки магазину →</a>
+        </div>
+        <div th:if="${discounts == null}" class="muted">Заявлених знижок зараз немає.</div>
+        <div class="stats shop-stats" th:if="${discounts != null}">
+            <div class="stat">
+                <span class="label">Заявлено</span>
+                <b th:text="${discounts.declared}">250</b>
+            </div>
+            <div class="stat">
+                <span class="label">Можна перевірити</span>
+                <b th:text="${discounts.checked}">110</b>
+            </div>
+            <div class="stat">
+                <span class="label">Недостовірних</span>
+                <b th:text="${discounts.untrustworthyPercent() != null} ? |${discounts.untrustworthyPercent()}%| : '—'">95%</b>
+            </div>
+            <div class="stat">
+                <span class="label">Справжніх</span>
+                <b th:text="${discounts.genuine}">4</b>
+            </div>
+        </div>
+    </section>
+
+    <section class="card card-pad section" th:if="${crawl != null}">
+        <h2>Збір даних</h2>
+        <p class="muted">
+            <span th:if="${lastCrawl != null}" th:text="|Останній обхід — ${#temporals.format(lastCrawl, 'dd.MM.yyyy HH:mm')}, |">Останній обхід — 19.10.2026 10:42, </span>
+            <span th:text="|категорій: ${crawl.categories}|">категорій: 5</span><span th:if="${crawl.failedCategories > 0}"
+                th:text="|, зі збоєм: ${crawl.failedCategories}|">, зі збоєм: 1</span><span th:if="${crawl.errorPercent != null}"
+                th:text="|, помилок на сторінках товарів: ${crawl.errorPercent}%|">, помилок: 1%</span>.
+        </p>
+    </section>
+</main>
+</body>
+</html>

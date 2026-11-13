@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${product.title})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('products')}"></header>
+<main class="container">
+    <nav class="breadcrumbs" aria-label="breadcrumb">
+        <a th:href="@{/products}">Товари</a>
+        <span>/</span>
+        <a th:href="@{/products(category=${product.categoryCode})}" th:text="${product.categoryName}">Пральні машини</a>
+    </nav>
+
+    <div class="page-head offer-head">
+        <div>
+            <h1 th:text="${product.title}">Пральна машина Samsung WW80T4040CE1UA</h1>
+            <div class="chips">
+                <span class="pill pill-neutral" th:text="${product.categoryName}">Пральні машини</span>
+                <span th:if="${product.brand != null}" class="pill pill-neutral" th:text="${product.brand}">SAMSUNG</span>
+                <span th:if="${product.modelCode != null}" class="pill pill-neutral"
+                      th:text="|код ${product.modelCode}|">код WW80T4040CE1UA</span>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${message}" class="flash flash-ok"><span th:text="${message}">Стежимо за ціною</span></div>
+    <div th:if="${error}" class="flash flash-error"><span th:text="${error}">Помилка</span></div>
+
+    <section class="card card-pad follow" id="follow">
+        <div class="follow-text">
+            <strong th:text="${subscription != null} ? 'Ви стежите за ціною' : 'Стежити за ціною'">Стежити за ціною</strong>
+            <span class="muted" th:if="${subscription == null}">Сповістимо, коли ціна знизиться по-справжньому
+                (не фіктивна знижка) або опуститься до бажаної.</span>
+            <span class="muted" th:if="${subscription != null and subscription.targetPrice == null}">
+                Сповістимо про реальне зниження ціни.</span>
+            <span class="muted" th:if="${subscription != null and subscription.targetPrice != null}"
+                  th:text="|Сповістимо про реальне зниження або ціну до ${#numbers.formatDecimal(subscription.targetPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴.|">
+                Сповістимо про реальне зниження або ціну до 15 000 ₴.</span>
+        </div>
+        <a th:if="${currentUser == null}" class="btn" th:href="@{/account/follow/{id}(id=${product.id})}">
+            Увійти, щоб стежити</a>
+        <div th:if="${currentUser != null}" class="follow-actions">
+            <form method="post" th:action="@{/account/subscriptions}" class="follow-form">
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <label class="sr-only" for="targetPrice">Бажана ціна, ₴</label>
+                <input type="text" inputmode="decimal" id="targetPrice" name="targetPrice"
+                       placeholder="Бажана ціна, ₴ (необов'язково)"
+                       th:value="${subscription != null and subscription.targetPrice != null} ? ${subscription.targetPrice.stripTrailingZeros().toPlainString()} : ''">
+                <button type="submit" class="btn" th:text="${subscription != null} ? 'Зберегти' : 'Стежити'">Стежити</button>
+            </form>
+            <form th:if="${subscription != null}" method="post"
+                  th:action="@{/account/subscriptions/{id}/delete(id=${product.id})}">
+                <button type="submit" class="btn btn-ghost">Не стежити</button>
+            </form>
+        </div>
+    </section>
+
+    <section th:if="${bestVerdict != null}" class="card card-pad verdict" th:classappend="|verdict-${bestVerdict.tone}|">
+        <span class="label" th:text="|Найнижча ціна — ${bestOffer.shopName}|">Найнижча ціна — Епіцентр</span>
+        <strong class="verdict-title" th:text="${bestVerdict.title}">Ціна нижча за звичайну</strong>
+        <p class="verdict-text" th:text="${bestVerdict.explanation}">На 12% дешевше за медіану інших магазинів (3)</p>
+        <p th:if="${bestVerdict.reduced}" class="hint">Оцінка за однією ознакою — довіра знижена.</p>
+    </section>
+
+    <section class="card card-pad hero-price section">
+        <div>
+            <span class="label">Найнижча ціна зараз</span>
+            <div class="big-price" th:if="${product.market.minPrice != null}">
+                <strong th:text="|${#numbers.formatDecimal(product.market.minPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">15 999 ₴</strong>
+            </div>
+            <p th:if="${product.market.minPrice == null}" class="muted">Зараз немає в наявності в жодному магазині</p>
+        </div>
+        <div class="stats">
+            <div class="stat">
+                <span class="label">Медіана ринку</span>
+                <b th:text="${product.market.median} != null ? |${#numbers.formatDecimal(product.market.median, 1, 'WHITESPACE', 0, 'POINT')} ₴| : '—'">16 499 ₴</b>
+            </div>
+            <div class="stat">
+                <span class="label">У наявності</span>
+                <b th:text="|${product.market.purchasableCount} з ${product.market.offers.size()}|">2 з 3</b>
+            </div>
+            <div class="stat">
+                <span class="label">Магазинів</span>
+                <b th:text="${product.market.shops.size()}">3</b>
+            </div>
+        </div>
+    </section>
+
+    <section class="card section">
+        <div class="card-head">
+            <h2>Історія цін у магазинах</h2>
+            <div class="segmented" role="group" id="periods">
+                <button type="button" th:each="p : ${periods}" th:attr="data-period=${p.key.name()}"
+                        th:classappend="${p.key == defaultPeriod} ? 'active'"
+                        th:text="${p.value}">Місяць</button>
+            </div>
+        </div>
+        <div class="chart-box">
+            <canvas id="product-chart" th:attr="data-product-id=${product.id},data-period=${defaultPeriod.name()}"
+                    aria-label="Графік цін товару в різних магазинах" role="img"></canvas>
+            <div id="chart-empty" class="empty" hidden>
+                <strong>Даних за цей період ще немає</strong>
+                Історія накопичується з кожним обходом магазинів.
+            </div>
+        </div>
+        <p id="chart-unconfirmed" class="hint chart-note" hidden>Пунктир із крапок — дні, коли магазин не обходили,
+            а ціна потім змінилась: показано останню відому ціну. Розрив лінії — товару не було в наявності.</p>
+    </section>
+
+    <section class="card section">
+        <div class="card-head">
+            <h2>Ціни в магазинах</h2>
+            <span class="muted" th:if="${product.market.median != null}">відхилення — від медіани поточних цін</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Магазин</th>
+                    <th>Назва в магазині</th>
+                    <th class="num">Ціна</th>
+                    <th class="num">Від медіани</th>
+                    <th>Оцінка</th>
+                    <th>Наявність</th>
+                    <th class="hide-sm">Оновлено</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="o : ${product.market.offers}">
+                    <td class="nowrap">
+                        <span th:replace="~{fragments/layout :: shop(${o.shopCode}, ${o.shopName})}"></span>
+                    </td>
+                    <td>
+                        <a class="offer-title" th:href="@{/offers/{id}(id=${o.id})}" th:text="${o.title}">Назва</a>
+                        <span th:unless="${o.active}" class="sub">пропозиція неактивна</span>
+                    </td>
+                    <td class="num nowrap">
+                        <div class="price-stack" th:if="${o.price != null}">
+                            <span class="price" th:text="|${#numbers.formatDecimal(o.price, 1, 'WHITESPACE', 0, 'POINT')} ₴|">15 999 ₴</span>
+                            <span th:if="${o.oldPrice != null}">
+                                <span class="old-price"
+                                      th:text="|${#numbers.formatDecimal(o.oldPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">18 999 ₴</span>
+                                <span class="pill pill-discount" th:text="|−${o.discountPercent()}%|">−16%</span>
+                            </span>
+                        </div>
+                        <span th:if="${o.price == null}" class="muted">—</span>
+                        <span th:if="${o.cheapest}" class="pill pill-good">найдешевше</span>
+                        <th:block th:with="d=${discounts.get(o.id)}">
+                            <span th:if="${d != null}" class="pill" th:classappend="|pill-tone-${d.tone}|"
+                                  th:title="${d.reasonsText()}" th:text="${d.label}">підозріла знижка</span>
+                        </th:block>
+                    </td>
+                    <td class="num nowrap" th:switch="${o.position() != null ? o.position().name() : ''}">
+                        <span th:case="'BELOW_MARKET'" class="pill pill-good" th:text="${o.deviationLabel()}">−8%</span>
+                        <span th:case="'ABOVE_MARKET'" class="pill pill-bad" th:text="${o.deviationLabel()}">+9%</span>
+                        <span th:case="'AT_MARKET'" class="pill pill-neutral" th:text="${o.deviationLabel()}">0%</span>
+                        <span th:case="*" class="muted">—</span>
+                    </td>
+                    <td class="nowrap" th:with="v=${verdicts.get(o.id)}">
+                        <span th:if="${v != null and v.shortTitle != '—'}" class="pill"
+                              th:classappend="|pill-tone-${v.tone}|" th:title="${v.explanation}"
+                              th:text="${v.shortTitle}">нижча за звичайну</span>
+                        <span th:if="${v == null or v.shortTitle == '—'}" class="muted"
+                              th:title="${v != null} ? ${v.explanation} : ''">—</span>
+                    </td>
+                    <td>
+                        <span th:if="${o.available}" class="stock in"><span class="dot"></span>є</span>
+                        <span th:unless="${o.available}" class="stock out"><span class="dot"></span>немає</span>
+                    </td>
+                    <td class="nowrap muted hide-sm" th:text="${#temporals.format(o.lastSeenAt, 'dd.MM HH:mm')}">06.10 04:12</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section th:if="${matchRows != null}" class="card section match-admin">
+        <div class="card-head">
+            <h2>Зіставлення</h2>
+            <span class="muted">видно лише адміністратору</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Магазин</th>
+                    <th>Назва в магазині</th>
+                    <th>Рішення</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="m : ${matchRows}">
+                    <td class="nowrap" th:text="${m.shopName}">Moyo</td>
+                    <td><a class="offer-title" th:href="@{/offers/{id}(id=${m.offerId})}" th:text="${m.title}">LG F2Y2HS5WE</a></td>
+                    <td class="nowrap">
+                        <span class="pill" th:classappend="${m.status.name() == 'MANUAL'} ? 'pill-good' : (${m.status.name() == 'PENDING'} ? 'pill-warn' : 'pill-neutral')"
+                              th:text="${m.status.name() == 'MANUAL'} ? 'вручну — той самий' : (${m.status.name() == 'REJECTED'} ? 'вручну — окремий' : (${m.status.name() == 'PENDING'} ? 'на перевірці' : 'автоматично'))">
+                            автоматично</span>
+                        <span class="muted" th:if="${m.confidence != null}"
+                              th:text="${#numbers.formatDecimal(m.confidence, 1, 2, 'POINT')}">0.98</span>
+                    </td>
+                    <td class="match-actions">
+                        <form th:if="${m.canPin()}" method="post" th:action="@{/admin/matching/offers/{id}/assign(id=${m.offerId})}">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+                            <input type="hidden" name="product" th:value="${product.id}">
+                            <button type="submit" class="btn btn-ghost btn-sm" title="Закріпити: автоматичний перерахунок її не відʼєднає">Закріпити</button>
+                        </form>
+                        <form th:if="${matchRows.size() > 1}" method="post" th:action="@{/admin/matching/offers/{id}/separate(id=${m.offerId})}">
+                            <input type="hidden" name="product" th:value="${product.id}">
+                            <button type="submit" class="btn btn-ghost btn-sm" title="Окремий товар: автоматично ні з чим не обʼєднувати">Відкріпити</button>
+                        </form>
+                        <form th:if="${m.canReset()}" method="post" th:action="@{/admin/matching/offers/{id}/reset(id=${m.offerId})}">
+                            <input type="hidden" name="product" th:value="${product.id}">
+                            <button type="submit" class="btn btn-ghost btn-sm" title="Скасувати ручне рішення — зіставити автоматично">Скинути рішення</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script th:src="@{/js/product-chart.js}"></script>
+</body>
+</html>

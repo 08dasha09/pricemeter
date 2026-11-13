@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pricemeter-postgres
+    environment:
+      POSTGRES_DB: pricemeter
+      POSTGRES_USER: pricemeter
+      POSTGRES_PASSWORD: pricemeter
+    ports:
+      - "5433:5432"
+    volumes:
+      - pricemeter-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pricemeter -d pricemeter"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # піднімається разом із Docker Desktop
+    restart: unless-stopped
+
+  # Застосунок у контейнері — лише з профілем app:
+  #   docker compose -f docker/docker-compose.yml --profile app up -d --build
+  # Після цього стартує разом із Docker Desktop; пропущений обхід надолужує сам (crawler.schedule.catch-up).
+  # Пароль адміністратора, SMTP тощо — у docker/app.env (необов'язковий; див. README).
+  app:
+    profiles: ["app"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: pricemeter-app
+    container_name: pricemeter-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/pricemeter
+      DB_USER: pricemeter
+      DB_PASSWORD: pricemeter
+      JAVA_TOOL_OPTIONS: -Xmx768m
+      TZ: Europe/Kyiv
+    env_file:
+      - path: app.env
+        required: false
+    ports:
+      - "8080:8080"
+    mem_limit: 1g
+    restart: unless-stopped
+
+volumes:
+  pricemeter-pgdata:

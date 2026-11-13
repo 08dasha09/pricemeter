@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Ціни на побутову техніку')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('home')}"></header>
+<main class="container">
+    <section class="card card-pad home-hero">
+        <h1>Чи справді це знижка?</h1>
+        <p class="muted">Щодня збираємо ціни на побутову техніку в Moyo, Цитрусі, Епіцентрі та Eldorado, порівнюємо
+            магазини між собою й з історією цін — і показуємо, де знижка справжня, а де ціну спершу підняли.</p>
+        <form method="get" th:action="@{/products}" class="home-search">
+            <span class="search-input">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+                </svg>
+                <input type="search" name="q" placeholder="Назва або код моделі, напр. WW80T4040" aria-label="Пошук товару">
+            </span>
+            <button type="submit" class="btn">Знайти</button>
+        </form>
+        <div class="chips home-categories">
+            <a th:each="c : ${categories}" class="pill pill-neutral"
+               th:href="@{/categories/{code}(code=${c.code.toLowerCase()})}" th:text="${c.name}">Пральні машини</a>
+        </div>
+        <div class="chips home-shops">
+            <span class="muted">Магазини:</span>
+            <a th:each="s : ${shops}" th:href="@{/shops/{code}(code=${s.code.toLowerCase()})}">
+                <span th:replace="~{fragments/layout :: shop(${s.code}, ${s.name})}"></span>
+            </a>
+        </div>
+    </section>
+
+    <section class="stats home-stats section">
+        <div class="stat card card-pad">
+            <span class="label">Товарів</span>
+            <b th:text="${#numbers.formatInteger(overview.products, 1, 'WHITESPACE')}">1 790</b>
+        </div>
+        <div class="stat card card-pad">
+            <span class="label">У кількох магазинах</span>
+            <b th:text="${#numbers.formatInteger(overview.multiShopProducts, 1, 'WHITESPACE')}">519</b>
+        </div>
+        <div class="stat card card-pad">
+            <span class="label">Недостовірних знижок</span>
+            <b th:text="${checkedDiscounts > 0} ? |${untrustworthyDiscounts} з ${checkedDiscounts}| : '—'">302 з 321</b>
+        </div>
+        <div class="stat card card-pad">
+            <span class="label">Оновлено</span>
+            <b th:text="${lastCrawl != null} ? ${#temporals.format(lastCrawl, 'dd.MM HH:mm')} : '—'">19.10 10:42</b>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-head">
+            <h2>Реальні знижки сьогодні</h2>
+            <a th:href="@{/discounts(level='GENUINE')}">Усі справжні →</a>
+        </div>
+        <p class="muted section-lead">Акційна ціна помітно нижча, ніж той самий товар коштує в інших магазинах.</p>
+        <div th:if="${realDeals.empty}" class="card empty">
+            <strong>Сьогодні таких немає</strong>
+            Справжня знижка — це ціна, нижча за інші магазини, а не лише закреслена «стара» ціна.
+        </div>
+        <div class="deal-grid" th:unless="${realDeals.empty}">
+            <div th:replace="~{:: deal(${realDeals})}"></div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-head">
+            <h2>Підозрілі знижки</h2>
+            <a th:href="@{/discounts}">Усі недостовірні →</a>
+        </div>
+        <p class="muted section-lead">Заявлена знижка є, але в інших магазинах той самий товар коштує так само або
+            «стара» ціна завищена.</p>
+        <div th:if="${suspicious.empty}" class="card empty">
+            <strong>Підозрілих знижок не знайдено</strong>
+        </div>
+        <div class="deal-grid" th:unless="${suspicious.empty}">
+            <div th:replace="~{:: deal(${suspicious})}"></div>
+        </div>
+    </section>
+</main>
+
+<th:block th:fragment="deal(picks)">
+    <a th:each="p : ${picks}" class="card card-pad deal" th:with="o=${p.finding.offer}, a=${p.finding.assessment}"
+       th:href="${p.finding.productId != null} ? @{/products/{id}(id=${p.finding.productId})} : @{/offers/{id}(id=${o.id})}">
+        <span class="deal-meta">
+            <span th:replace="~{fragments/layout :: shop(${o.shopCode}, ${o.shopName})}"></span>
+            <span class="muted" th:text="${p.categoryName}">Пральні машини</span>
+        </span>
+        <strong class="deal-title" th:text="${o.title}">Пральна машина LG F2Y2HS5WE</strong>
+        <span class="deal-price">
+            <span class="price" th:text="|${#numbers.formatDecimal(o.price, 1, 'WHITESPACE', 0, 'POINT')} ₴|">15 999 ₴</span>
+            <span class="old-price" th:text="|${#numbers.formatDecimal(o.oldPrice, 1, 'WHITESPACE', 0, 'POINT')} ₴|">18 999 ₴</span>
+            <span class="pill pill-discount" th:text="|−${a.declaredPercent}%|">−16%</span>
+        </span>
+        <span class="pill" th:classappend="|pill-tone-${p.view.tone}|" th:text="${p.view.label}">знижка справжня</span>
+        <span class="deal-reason" th:text="${p.view.reasons[0]}">Акційна ціна на 12% нижча за медіану інших магазинів</span>
+    </a>
+</th:block>
+</body>
+</html>

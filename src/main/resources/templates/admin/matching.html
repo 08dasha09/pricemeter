@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Зіставлення товарів')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('matching')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>Зіставлення товарів</h1>
+            <p>Пропозиції різних магазинів об'єднуються в товари автоматично після кожного обходу.
+                Тут — ті, у яких є можливий, але не певний збіг.</p>
+        </div>
+        <div class="head-actions">
+            <a th:href="@{/admin/matching/evaluation}" class="btn btn-ghost">Якість</a>
+            <a th:href="@{/admin/labeling}" class="btn btn-ghost">Розмітка пар</a>
+            <form method="post" th:action="@{/admin/matching/run}">
+                <button type="submit" class="btn btn-ghost">Зіставити всі зараз</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${message}" class="flash flash-ok">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span th:text="${message}">Готово</span>
+    </div>
+    <div th:if="${error}" class="flash flash-error">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span th:text="${error}">Помилка</span>
+    </div>
+
+    <div th:if="${reviews.empty}" class="card empty">
+        <strong>Перевіряти нічого</strong>
+        Усі пропозиції або впевнено об'єднані, або явно різні.
+    </div>
+
+    <div th:each="r : ${reviews}" class="card section review">
+        <div class="card-head review-head">
+            <div class="review-offer">
+                <span th:replace="~{fragments/layout :: shop(${r.shopCode}, ${shopNames.get(r.shopCode) ?: r.shopCode})}"></span>
+                <a th:href="@{/offers/{id}(id=${r.offerId})}" class="offer-title" th:text="${r.title}">Назва</a>
+                <span class="sub">
+                    <span th:text="${categoryNames.get(r.categoryCode) ?: r.categoryCode}">Пральні машини</span>
+                    <th:block th:if="${r.modelCode != null}"> · код <code th:text="${r.modelCode}">WW80</code></th:block>
+                </span>
+            </div>
+            <form method="post" th:action="@{/admin/matching/offers/{id}/separate(id=${r.offerId})}">
+                <button type="submit" class="btn btn-ghost">Окремий товар</button>
+            </form>
+        </div>
+        <div th:if="${r.suggestions.empty}" class="card-pad muted">
+            Кандидатів більше немає — товари змінились після зіставлення.
+        </div>
+        <ul class="suggestions" th:unless="${r.suggestions.empty}">
+            <li th:each="s : ${r.suggestions}" class="suggestion">
+                <div class="suggestion-score">
+                    <strong th:text="|${#numbers.formatDecimal(s.score * 100, 1, 0)}%|">82%</strong>
+                    <span class="sub" th:text="${reasons.get(s.reason)}">один код — початок іншого</span>
+                </div>
+                <ul class="suggestion-offers">
+                    <li th:each="m : ${s.offers}">
+                        <span th:replace="~{fragments/layout :: shop(${m.shopCode}, ${shopNames.get(m.shopCode) ?: m.shopCode})}"></span>
+                        <a th:href="@{/offers/{id}(id=${m.offerId})}" th:text="${m.title}">Назва</a>
+                    </li>
+                </ul>
+                <form method="post" th:action="@{/admin/matching/offers/{id}/assign(id=${r.offerId})}">
+                    <input type="hidden" name="productId" th:value="${s.productId}">
+                    <button type="submit" class="btn">Той самий товар</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</main>
+</body>
+</html>

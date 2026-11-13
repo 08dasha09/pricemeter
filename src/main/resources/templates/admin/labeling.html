@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Розмітка пар')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('matching')}"></header>
+<main class="container">
+    <div class="page-head">
+        <div>
+            <h1>Розмітка пар</h1>
+            <p>Чи це той самий товар? Відповіді — еталон для оцінки зіставлення (Precision / Recall) і підбору
+                порогів. Пари беруться порівну з кожного діапазону оцінки, тож трапляються і явно різні товари.</p>
+        </div>
+        <div class="head-actions">
+            <a th:href="@{/admin/matching/evaluation}" class="btn btn-ghost">Якість зіставлення</a>
+            <a th:href="@{/admin/matching}" class="btn btn-ghost">До зіставлення</a>
+        </div>
+    </div>
+
+    <div th:if="${message}" class="flash flash-ok">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span th:text="${message}">Готово</span>
+    </div>
+    <div th:if="${error}" class="flash flash-error">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span th:text="${error}">Помилка</span>
+    </div>
+
+    <div th:if="${task == null}" class="card empty">
+        <strong>Розмічати нічого</strong>
+        Усі пари пропозицій різних магазинів уже розмічені або пропозицій ще немає.
+    </div>
+
+    <section th:if="${task != null}" class="card label-task">
+        <div class="card-head">
+            <div>
+                <span class="label" th:text="${categoryName}">Пральні машини</span>
+                <h2>Той самий товар?</h2>
+            </div>
+            <div class="label-score">
+                <strong th:text="|${#numbers.formatDecimal(task.score.value * 100, 1, 0)}%|">82%</strong>
+                <span class="sub" th:text="${reasons.get(task.score.reason)}">один код — початок іншого</span>
+            </div>
+        </div>
+        <div class="label-pair">
+            <div th:each="s : ${sides}" class="label-side">
+                <span th:replace="~{fragments/layout :: shop(${s.shopCode}, ${s.shopName})}"></span>
+                <a th:href="@{/offers/{id}(id=${s.offerId})}" class="offer-title" th:text="${s.title}">Назва</a>
+                <span class="sub">
+                    код <code th:text="${s.modelCode ?: '—'}">WW80T4040CE1UA</code>
+                    · <th:block th:text="${s.price} != null ? |${#numbers.formatDecimal(s.price, 1, 'WHITESPACE', 0, 'POINT')} ₴| : 'немає в наявності'">15 999 ₴</th:block>
+                    <th:block th:if="${s.url != null}"> · <a th:href="${s.url}" target="_blank" rel="noopener noreferrer">на сайті ↗</a></th:block>
+                </span>
+            </div>
+        </div>
+        <div class="label-actions">
+            <form method="post" th:action="@{/admin/labeling}">
+                <input type="hidden" name="offerA" th:value="${a.offerId}">
+                <input type="hidden" name="offerB" th:value="${b.offerId}">
+                <input type="hidden" name="same" value="true">
+                <button type="submit" class="btn">Той самий товар</button>
+            </form>
+            <form method="post" th:action="@{/admin/labeling}">
+                <input type="hidden" name="offerA" th:value="${a.offerId}">
+                <input type="hidden" name="offerB" th:value="${b.offerId}">
+                <input type="hidden" name="same" value="false">
+                <button type="submit" class="btn">Різні товари</button>
+            </form>
+            <a th:href="@{/admin/labeling}" class="btn btn-ghost">Не знаю — інша пара</a>
+            <span class="sub" th:text="|у цьому діапазоні ще ${task.unlabeledLeft} нерозмічених пар|">ще 120 пар</span>
+        </div>
+    </section>
+
+    <section class="card section">
+        <div class="card-head">
+            <h2>Розмічено</h2>
+            <span class="muted" th:text="|${progress.total} пар: той самий товар — ${progress.same}, різні — ${progress.different()}|">0 пар</span>
+        </div>
+        <div class="table-wrap">
+            <table class="table-compact">
+                <thead>
+                <tr>
+                    <th>Оцінка системи</th>
+                    <th class="num">Розмічено</th>
+                    <th class="num">Той самий</th>
+                    <th class="num">Різні</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${progress.bands}">
+                    <td th:text="|${#numbers.formatDecimal(e.key.from() * 100, 1, 0)}–${#numbers.formatDecimal(e.key.to() * 100, 1, 0)}%|">65–80%</td>
+                    <td class="num" th:text="${e.value.labeled}">10</td>
+                    <td class="num" th:text="${e.value.same}">4</td>
+                    <td class="num" th:text="${e.value.different()}">6</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

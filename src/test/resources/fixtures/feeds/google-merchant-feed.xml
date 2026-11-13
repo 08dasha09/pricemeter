@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Синтетична фікстура у форматі Google Merchant Center (RSS 2.0) -->
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+    <channel>
+        <title>Test Shop</title>
+        <link>https://shop.example.ua</link>
+        <description>Product feed</description>
+        <item>
+            <g:id>FX-1001</g:id>
+            <g:title>Холодильник LG GA-B509CQSL</g:title>
+            <g:link>https://shop.example.ua/lg-ga-b509cqsl/</g:link>
+            <g:price>23999.00 UAH</g:price>
+            <g:sale_price>19499.00 UAH</g:sale_price>
+            <g:availability>in stock</g:availability>
+            <g:brand>LG</g:brand>
+            <g:gtin>8801031000000</g:gtin>
+            <g:mpn>GA-B509CQSL</g:mpn>
+            <g:product_type>Побутова техніка &gt; Холодильники</g:product_type>
+            <g:shipping>
+                <g:country>UA</g:country>
+                <g:price>0 UAH</g:price>
+            </g:shipping>
+            <g:product_detail>
+                <g:section_name>Загальні</g:section_name>
+                <g:attribute_name>Об'єм</g:attribute_name>
+                <g:attribute_value>384 л</g:attribute_value>
+            </g:product_detail>
+        </item>
+        <item>
+            <id>FX-1002</id>
+            <title>Посудомийна машина Bosch SMS4HVI33E</title>
+            <link>https://shop.example.ua/bosch-sms4hvi33e/</link>
+            <price>20999 UAH</price>
+            <availability>out_of_stock</availability>
+            <brand>Bosch</brand>
+        </item>
+        <item>
+            <g:id>FX-1003</g:id>
+            <g:link>https://shop.example.ua/no-title/</g:link>
+            <g:price>100 UAH</g:price>
+        </item>
+    </channel>
+</rss>

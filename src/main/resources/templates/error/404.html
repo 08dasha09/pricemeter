@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Не знайдено')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('')}"></header>
+<main class="container">
+    <div class="card empty">
+        <strong>Сторінку не знайдено</strong>
+        <p>Можливо, пропозицію видалено або адреса неправильна.</p>
+        <a class="btn" th:href="@{/offers}">До списку пропозицій</a>
+    </div>
+</main>
+</body>
+</html>
